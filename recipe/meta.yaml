@@ -14,15 +14,19 @@ package:
   version: {{ version }}
 
 source:
-  url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [(cuda_compiler_version or "").startswith("12")]
-  url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [(cuda_compiler_version or "").startswith("13")]
-  sha256: 25e4b38ab3996c4c8ac5cbe372fce050eaa3a9cea1efd120165d78e735967c5b  # [linux64 and (cuda_compiler_version or "").startswith("12")]]
-  sha256: 0a4dbaab73bf78d1a4a11ce0bc9f503fc70b0c24559c0e46d782f0fc688599ba  # [linux64 and (cuda_compiler_version or "").startswith("13")]]
-  sha256: 8514f370bae8ada4d2d9b4ab461ad9fe0b61533b5b2a65c35a3ff97f9a919d50  # [linux and aarch64 and (cuda_compiler_version or "").startswith("12")]]
-  sha256: a67893e5176d6cc840326af1f0d938d803ca7d353bde0d1e1c503f4050750360  # [linux and aarch64 and (cuda_compiler_version or "").startswith("13")]]
+  # One entry per variant (one url + one sha256 each) to avoid the linter's
+  # duplicate-key warnings. {{ platform }} resolves the arch per variant.
+  - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: 25e4b38ab3996c4c8ac5cbe372fce050eaa3a9cea1efd120165d78e735967c5b  # [linux64 and (cuda_compiler_version or "").startswith("12")]
+  - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: 0a4dbaab73bf78d1a4a11ce0bc9f503fc70b0c24559c0e46d782f0fc688599ba  # [linux64 and (cuda_compiler_version or "").startswith("13")]
+  - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: 8514f370bae8ada4d2d9b4ab461ad9fe0b61533b5b2a65c35a3ff97f9a919d50  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
+  - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: a67893e5176d6cc840326af1f0d938d803ca7d353bde0d1e1c503f4050750360  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
 
 build:
-  number: 1
+  number: 0
   skip: true  # [not (linux64 or aarch64) or cuda_compiler_version in ("None", "")]
 
 requirements:
@@ -121,14 +125,23 @@ outputs:
 about:
   home: https://developer.nvidia.com/cuest
   license: LicenseRef-NVIDIA-End-User-License-Agreement
+  license_family: Other
   license_file: LICENSE
   license_url: https://docs.nvidia.com/cuda/cuest/latest/license.html
   summary: cuEST - GPU-powered electronic structure theory
   description: |
     Fast, GPU-powered components for electronic structure theory
   doc_url: https://docs.nvidia.com/cuda/cuest/
+  dev_url: https://developer.nvidia.com/cuest
 
 extra:
+  skip-lints:
+    # license_url is kept on all Nvidia feedstocks per team convention
+    - deprecate_license_url
+    # cuda libs are linked with no CBC pin var; cuda-version steers the major.
+    - host_section_needs_exact_pinnings
+    # cuda-skipped multi-output: outputs are absent at lint render (cuda=None).
+    - missing_source_tracking
   feedstock-name: libcuest
   recipe-maintainers:
     - conda-forge/cuda
