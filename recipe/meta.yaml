@@ -1,6 +1,6 @@
 {% set name = "libcuest" %}
-{% set version = "0.1.1.1" %}
-{% set cuda_compiler_version = cuda_compiler_version | default("None") %}
+{% set version = "0.2.2.2" %}
+{% set cuda_compiler_version = 'cuda_compiler_version | default("None")' %}
 {% set abiversion = version.split('.')[0] %}
 {% set majorminorpatch = '.'.join(version.split('.')[:3]) %}
 {% set platform = "linux-x86_64" %}  # [linux64]
@@ -17,13 +17,13 @@ source:
   # One entry per variant (one url + one sha256 each) to avoid the linter's
   # duplicate-key warnings. {{ platform }} resolves the arch per variant.
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("12")]
-    sha256: 25e4b38ab3996c4c8ac5cbe372fce050eaa3a9cea1efd120165d78e735967c5b  # [linux64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: b5a19206e49b7df30080260123649063f8d9e730458634d764fe87f6f02466a6
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("13")]
-    sha256: 0a4dbaab73bf78d1a4a11ce0bc9f503fc70b0c24559c0e46d782f0fc688599ba  # [linux64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: 413e9050d2c1e998a0a6eb803e1c468217fbeebe25e5e80068c22b5ce8e66c31
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
-    sha256: 8514f370bae8ada4d2d9b4ab461ad9fe0b61533b5b2a65c35a3ff97f9a919d50  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: b5a19206e49b7df30080260123649063f8d9e730458634d764fe87f6f02466a6
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
-    sha256: a67893e5176d6cc840326af1f0d938d803ca7d353bde0d1e1c503f4050750360  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: 413e9050d2c1e998a0a6eb803e1c468217fbeebe25e5e80068c22b5ce8e66c31
 
 build:
   number: 0
@@ -70,7 +70,6 @@ outputs:
       commands:
         - test -f $PREFIX/lib/libcuest.so.{{ majorminorpatch }}
         - test -L $PREFIX/lib/libcuest.so.{{ abiversion }}
-
   - name: libcuest-dev
     build:
       ignore_run_exports:
@@ -99,7 +98,6 @@ outputs:
         - test -L $PREFIX/lib/libcuest.so
         - test -f $PREFIX/include/cuest.h
         - test -d $PREFIX/include/cuest
-
   - name: libcuest-static
     build:
       ignore_run_exports:
