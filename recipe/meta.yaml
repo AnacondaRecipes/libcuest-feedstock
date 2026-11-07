@@ -1,25 +1,24 @@
 {% set name = "libcuest" %}
 {% set version = "0.2.2.2" %}
-{% set cuda_compiler_version = cuda_compiler_version | default("None") %}
+
 {% set abiversion = version.split('.')[0] %}
 {% set majorminorpatch = '.'.join(version.split('.')[:3]) %}
-# Anaconda: split version parts for header macro checks
-{% set ver_major = version.split('.')[0] %}
-{% set ver_minor = version.split('.')[1] %}
-{% set ver_patch = version.split('.')[2] %}
 {% set platform = "linux-x86_64" %}  # [linux64]
 {% set platform = "linux-sbsa" %}  # [aarch64]
 {% set target_name = "x86_64-linux" %}  # [linux64]
 {% set target_name = "sbsa-linux" %}  # [aarch64]
 {% set extension = "tar.xz" %}  # [not win]
 
+# Anaconda: split version parts for header macro checks
+{% set ver_major = version.split('.')[0] %}
+{% set ver_minor = version.split('.')[1] %}
+{% set ver_patch = version.split('.')[2] %}
+
 package:
   name: {{ name|lower }}-split
   version: {{ version }}
 
 source:
-  # Anaconda: one entry per variant (one url + one sha256 each) to avoid the
-  # linter's duplicate-key warnings. {{ platform }} resolves the arch per variant.
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("12")]
     sha256: 03417f0a2dfa4ef436a2ea30800a44856b1ab3b8b46fac92cbec2e1c8b4fda10  # [linux64 and (cuda_compiler_version or "").startswith("12")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("13")]
@@ -77,8 +76,11 @@ outputs:
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     test:
       commands:
+        # Anaconda: runtime ships only versioned libraries, not dev/static files
         - test -f $PREFIX/lib/libcuest.so.{{ majorminorpatch }}
         - test -L $PREFIX/lib/libcuest.so.{{ abiversion }}
+        - test ! -f $PREFIX/lib/libcuest.so
+        - test ! -f $PREFIX/lib/libcuest_static.a
 
   - name: libcuest-dev
     build:
@@ -104,10 +106,23 @@ outputs:
         - {{ pin_compatible("cuda-version", min_pin="x", max_pin="x") }}
         - {{ pin_subpackage("libcuest", exact=True) }}
     test:
+      files:
+        - test/test_cuest.c
+      requires:
+        - {{ compiler('c') }}
+        - {{ stdlib('c') }}
       commands:
+        # Anaconda: verify the unversioned link and all public header directories are shipped
         - test -L $PREFIX/lib/libcuest.so
         - test -f $PREFIX/include/cuest.h
-        - test -d $PREFIX/include/cuest
+        - test ! -f $PREFIX/lib/libcuest_static.a
+        - for d in basis context density_fitted_integrals ecp ecp_basis exchange_correlation grid integral_plans one_electron_integrals parameters pcm query results types; do test -d $PREFIX/include/cuest/$d; done
+        # Anaconda: verify the header version macros match the package version
+        - grep -Eq '#define +CUEST_VER_MAJOR +{{ ver_major }}' $PREFIX/include/cuest.h
+        - grep -Eq '#define +CUEST_VER_MINOR +{{ ver_minor }}' $PREFIX/include/cuest.h
+        - grep -Eq '#define +CUEST_VER_PATCH +{{ ver_patch }}' $PREFIX/include/cuest.h
+        # Anaconda: compile and link a minimal consumer to validate the dev package
+        - $CC test/test_cuest.c -I$PREFIX/include -L$PREFIX/lib -lcuest -o test_cuest
 
   - name: libcuest-static
     build:
@@ -129,7 +144,8 @@ outputs:
         - {{ pin_subpackage("libcuest-dev", exact=True) }}
     test:
       commands:
-        - test -f $PREFIX/lib/libcuest_static.a
+        # Anaconda: ensure the static archive is present and non-empty
+        - test -s $PREFIX/lib/libcuest_static.a
 
 about:
   home: https://developer.nvidia.com/cuest
@@ -145,12 +161,7 @@ about:
 
 extra:
   skip-lints:
-    # license_url is kept on all Nvidia feedstocks per team convention
     - deprecate_license_url
-    # cuda libs are linked with no CBC pin var; cuda-version steers the major.
-    - host_section_needs_exact_pinnings
-    # cuda-skipped multi-output: outputs are absent at lint render (cuda=None).
-    - missing_source_tracking
   feedstock-name: libcuest
   recipe-maintainers:
     - conda-forge/cuda
