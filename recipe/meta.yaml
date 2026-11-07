@@ -1,8 +1,12 @@
 {% set name = "libcuest" %}
-{% set version = "0.1.1.1" %}
+{% set version = "0.2.2.2" %}
 {% set cuda_compiler_version = cuda_compiler_version | default("None") %}
 {% set abiversion = version.split('.')[0] %}
 {% set majorminorpatch = '.'.join(version.split('.')[:3]) %}
+# Anaconda: split version parts for header macro checks
+{% set ver_major = version.split('.')[0] %}
+{% set ver_minor = version.split('.')[1] %}
+{% set ver_patch = version.split('.')[2] %}
 {% set platform = "linux-x86_64" %}  # [linux64]
 {% set platform = "linux-sbsa" %}  # [aarch64]
 {% set target_name = "x86_64-linux" %}  # [linux64]
@@ -14,16 +18,16 @@ package:
   version: {{ version }}
 
 source:
-  # One entry per variant (one url + one sha256 each) to avoid the linter's
-  # duplicate-key warnings. {{ platform }} resolves the arch per variant.
+  # Anaconda: one entry per variant (one url + one sha256 each) to avoid the
+  # linter's duplicate-key warnings. {{ platform }} resolves the arch per variant.
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("12")]
-    sha256: 25e4b38ab3996c4c8ac5cbe372fce050eaa3a9cea1efd120165d78e735967c5b  # [linux64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: 03417f0a2dfa4ef436a2ea30800a44856b1ab3b8b46fac92cbec2e1c8b4fda10  # [linux64 and (cuda_compiler_version or "").startswith("12")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("13")]
-    sha256: 0a4dbaab73bf78d1a4a11ce0bc9f503fc70b0c24559c0e46d782f0fc688599ba  # [linux64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: 71641ba4aaa068dad037b9837f6fd0920edb7283f8297eccb9bedba6f405d228  # [linux64 and (cuda_compiler_version or "").startswith("13")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
-    sha256: 8514f370bae8ada4d2d9b4ab461ad9fe0b61533b5b2a65c35a3ff97f9a919d50  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: b5a19206e49b7df30080260123649063f8d9e730458634d764fe87f6f02466a6  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
-    sha256: a67893e5176d6cc840326af1f0d938d803ca7d353bde0d1e1c503f4050750360  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: 413e9050d2c1e998a0a6eb803e1c468217fbeebe25e5e80068c22b5ce8e66c31  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
 
 build:
   number: 0
@@ -36,12 +40,15 @@ requirements:
 outputs:
   - name: libcuest
     build:
+      missing_dso_whitelist:
+        - "*libcuda.so*"              # driver, not provided by any conda package
       # Ignore run_exports on cuda-version which we need to add to avoid hash collision as we have multiple CTK support
       ignore_run_exports:
         - cuda-version
       # cuda-version will take care of constraining versions for the following
       # and thus we should ignore the run exports from them which are more strict
       ignore_run_exports_from:
+        - cuda-nvrtc-dev
         - libcublas-dev
         - libcusolver-dev
         - libcusparse-dev
@@ -55,6 +62,7 @@ outputs:
         - {{ stdlib("c") }}
         - {{ compiler('cuda') }}
       host:
+        - cuda-nvrtc-dev
         - libcublas-dev
         - libcusolver-dev
         - libcusparse-dev
@@ -64,6 +72,7 @@ outputs:
         - libcublas
         - libcusolver
         - libcusparse
+        - cuda-nvrtc
         - libnvjitlink
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     test:
