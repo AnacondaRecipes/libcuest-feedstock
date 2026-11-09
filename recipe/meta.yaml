@@ -35,12 +35,19 @@ build:
 requirements:
   build:
     - cf-nvidia-tools 1.*  # [linux]
+    # Anaconda: pinned so build.sh applies a consistent RPATH
+    - patchelf 0.19.1
 
 outputs:
   - name: libcuest
     build:
+       # Anaconda: RPATH is set in build.sh
+      binary_relocation: false
       missing_dso_whitelist:
         - "*libcuda.so*"              # driver, not provided by any conda package
+      # Anaconda: RPATH is set in build.sh, so allow the $ORIGIN runpath
+      runpath_whitelist:  # [linux]
+        - $ORIGIN  # [linux]
       # Ignore run_exports on cuda-version which we need to add to avoid hash collision as we have multiple CTK support
       ignore_run_exports:
         - cuda-version
@@ -75,15 +82,20 @@ outputs:
         - libnvjitlink
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     test:
+      requires:
+        - patchelf 0.19.1  # Anaconda: used to verify the packaged RPATH
       commands:
         # Anaconda: runtime ships only versioned libraries, not dev/static files
         - test -f $PREFIX/lib/libcuest.so.{{ majorminorpatch }}
         - test -L $PREFIX/lib/libcuest.so.{{ abiversion }}
         - test ! -f $PREFIX/lib/libcuest.so
         - test ! -f $PREFIX/lib/libcuest_static.a
+        # Anaconda: verify the RPATH set in build.sh survived packaging
+        - test "$(patchelf --print-rpath $PREFIX/lib/libcuest.so.{{ majorminorpatch }})" = '$ORIGIN/.'
 
   - name: libcuest-dev
     build:
+      binary_relocation: false  # Anaconda: RPATH is set in build.sh
       ignore_run_exports:
         - cuda-version
       # Export libcuest for a consuming feedstock that needs libcuest-dev in their host: section
@@ -126,6 +138,7 @@ outputs:
 
   - name: libcuest-static
     build:
+      binary_relocation: false  # Anaconda: RPATH is set in build.sh
       ignore_run_exports:
         - cuda-version
     files:
