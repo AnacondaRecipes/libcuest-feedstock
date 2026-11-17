@@ -127,8 +127,9 @@ outputs:
         # Anaconda: verify the unversioned link and all public header directories are shipped
         - test -L $PREFIX/lib/libcuest.so
         - test -f $PREFIX/include/cuest.h
+        - test -f $PREFIX/include/cuest/macros.h
         - test ! -f $PREFIX/lib/libcuest_static.a
-        - for d in basis context density_fitted_integrals ecp ecp_basis exchange_correlation grid integral_plans one_electron_integrals parameters pcm query results types; do test -d $PREFIX/include/cuest/$d; done
+        - for d in basis context density_fitted_integrals direct_integrals ecp ecp_basis exchange_correlation grid grid_k integral_plans one_electron_integrals parameters pcm query results types; do test -d $PREFIX/include/cuest/$d; done
         # Anaconda: verify the header version macros match the package version
         - grep -Eq '#define +CUEST_VER_MAJOR +{{ ver_major }}' $PREFIX/include/cuest.h
         - grep -Eq '#define +CUEST_VER_MINOR +{{ ver_minor }}' $PREFIX/include/cuest.h
