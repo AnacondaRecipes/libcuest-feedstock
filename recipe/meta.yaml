@@ -1,5 +1,5 @@
 {% set name = "libcuest" %}
-{% set version = "0.2.2.2" %}
+{% set version = "0.3.0.1" %}
 
 {% set abiversion = version.split('.')[0] %}
 {% set majorminorpatch = '.'.join(version.split('.')[:3]) %}
@@ -20,13 +20,13 @@ package:
 
 source:
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("12")]
-    sha256: 03417f0a2dfa4ef436a2ea30800a44856b1ab3b8b46fac92cbec2e1c8b4fda10  # [linux64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: 42bcdd7d8ef96c27e42e8f6815931d5b1ffab892e33ca0021d2eabd996fd3613  # [linux64 and (cuda_compiler_version or "").startswith("12")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [linux64 and (cuda_compiler_version or "").startswith("13")]
-    sha256: 71641ba4aaa068dad037b9837f6fd0920edb7283f8297eccb9bedba6f405d228  # [linux64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: 3c05c2eaf8ac1bdc68f82d3002462df112e2f441922163d5a1d0c3c0651375db  # [linux64 and (cuda_compiler_version or "").startswith("13")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda12-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
-    sha256: b5a19206e49b7df30080260123649063f8d9e730458634d764fe87f6f02466a6  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
+    sha256: a234ed3be1076c72b81364ddeada783b14c4c7e30e7aef7b928c86f8073278eb  # [aarch64 and (cuda_compiler_version or "").startswith("12")]
   - url: https://developer.download.nvidia.com/compute/cuest/redist/{{ name }}/{{ platform }}/{{ name }}-{{ platform }}-{{ version }}_cuda13-archive.{{ extension }}  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
-    sha256: 413e9050d2c1e998a0a6eb803e1c468217fbeebe25e5e80068c22b5ce8e66c31  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
+    sha256: ef989aace2b7e5f3ce377aab503bd5457690bc4ca8b6a9d9fd59b052c71b3d40  # [aarch64 and (cuda_compiler_version or "").startswith("13")]
 
 build:
   number: 0
@@ -127,8 +127,9 @@ outputs:
         # Anaconda: verify the unversioned link and all public header directories are shipped
         - test -L $PREFIX/lib/libcuest.so
         - test -f $PREFIX/include/cuest.h
+        - test -f $PREFIX/include/cuest/macros.h
         - test ! -f $PREFIX/lib/libcuest_static.a
-        - for d in basis context density_fitted_integrals ecp ecp_basis exchange_correlation grid integral_plans one_electron_integrals parameters pcm query results types; do test -d $PREFIX/include/cuest/$d; done
+        - for d in basis context density_fitted_integrals direct_integrals ecp ecp_basis exchange_correlation grid grid_k integral_plans one_electron_integrals parameters pcm query results types; do test -d $PREFIX/include/cuest/$d; done
         # Anaconda: verify the header version macros match the package version
         - grep -Eq '#define +CUEST_VER_MAJOR +{{ ver_major }}' $PREFIX/include/cuest.h
         - grep -Eq '#define +CUEST_VER_MINOR +{{ ver_minor }}' $PREFIX/include/cuest.h
